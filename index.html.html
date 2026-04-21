@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canvas LMS — Ver Rúbricas (Rúbricas Mejoradas)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f4f4f0;
+    color: #1a1a18;
+    padding: 24px 16px 32px;
+    min-height: 100vh;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 0.5px solid #d8d6cc;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 24px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: #1a1a18;
+    margin-bottom: 16px;
+  }
+
+  .toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .btn {
+    font-size: 12px;
+    font-family: inherit;
+    padding: 5px 11px;
+    border-radius: 6px;
+    border: 0.5px solid #b0aea6;
+    background: #ffffff;
+    color: #1a1a18;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: #f0ede8; }
+
+  .btn-primary {
+    background: #0770c5;
+    color: #ffffff;
+    border-color: #0770c5;
+  }
+  .btn-primary:hover { background: #0560a8; }
+
+  .tab-row {
+    display: flex;
+    border-bottom: 0.5px solid #d8d6cc;
+    margin-bottom: 14px;
+  }
+  .tab {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px 9px;
+    border: none;
+    background: none;
+    color: #888780;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    font-family: inherit;
+    transition: color 0.15s;
+  }
+  .tab.active { color: #0770c5; border-bottom-color: #0770c5; }
+  .tab:hover:not(.active) { color: #1a1a18; }
+
+  .table-wrap {
+    border: 0.5px solid #d8d6cc;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+
+  col.col-check  { width: 34px; }
+  col.col-nombre { width: 36%; }
+  col.col-puntos { width: 14%; }
+  col.col-crit   { width: 13%; }
+  col.col-ubic   { width: 23%; }
+  col.col-acc    { width: 14%; }
+
+  thead tr { background: #f4f4f0; }
+
+  th {
+    padding: 9px 10px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    color: #5f5e5a;
+    border-bottom: 0.5px solid #d8d6cc;
+    border-right: 0.5px solid #d8d6cc;
+    position: relative;
+  }
+  th:last-child { border-right: none; text-align: center; }
+
+  td {
+    padding: 9px 10px;
+    border-bottom: 0.5px solid #d8d6cc;
+    border-right: 0.5px solid #d8d6cc;
+    vertical-align: middle;
+    color: #1a1a18;
+    font-size: 13px;
+  }
+  td:last-child { border-right: none; text-align: center; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f9f8f5; }
+
+  .link { color: #0770c5; text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    color: #0560a8;
+    background: #dceeff;
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+  .dash { color: #888780; }
+
+  .actions-btn {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    border: 0.5px solid #b0aea6;
+    background: #ffffff;
+    cursor: pointer;
+    color: #1a1a18;
+    transition: background 0.15s;
+  }
+  .actions-btn:hover { background: #f0ede8; }
+
+  /* ── Tooltips ── */
+  .tip-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+  }
+  .tip-box {
+    display: none;
+    position: absolute;
+    z-index: 100;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 230px;
+    max-width: 290px;
+    background: #ffffff;
+    border: 0.5px solid #b0aea6;
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #1a1a18;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+    pointer-events: none;
+  }
+  .tip-box.right { left: auto; right: 0; }
+  .tip-wrap:hover .tip-box { display: block; }
+
+  .tip-title {
+    display: block;
+    font-weight: 500;
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: #1a1a18;
+  }
+
+  /* ── Bottom row ── */
+  .bottom-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-download {
+    background: #dceeff;
+    color: #0560a8;
+    border-color: #8ec4f0;
+  }
+  .btn-download:hover { background: #c8e4ff; }
+
+  /* ── Info strip ── */
+  .info-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .info-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    background: #f4f4f0;
+    border: 0.5px solid #d8d6cc;
+    border-radius: 8px;
+    padding: 10px 13px;
+    flex: 1;
+    min-width: 150px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .pill-label {
+    display: block;
+    font-weight: 500;
+    font-size: 12px;
+    color: #1a1a18;
+    margin-bottom: 2px;
+  }
+  .pill-text { font-size: 11.5px; line-height: 1.55; color: #5f5e5a; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+  }
+  .badge-blue { background: #dceeff; color: #0560a8; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 11px;
+    color: #888780;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <p class="page-title">Rúbricas</p>
+
+  <div class="toolbar-row">
+    <div></div>
+    <div class="btn-group">
+
+      <div class="tip-wrap">
+        <button class="btn">&#128269; Buscar...</button>
+        <div class="tip-box right">
+          <span class="tip-title">Buscador de rúbricas</span>
+          Filtra la lista por nombre. Útil cuando el curso acumula muchas rúbricas de distintos periodos académicos.
+        </div>
+      </div>
+
+      <div class="tip-wrap">
+        <button class="btn">&#8679; Importar rúbrica</button>
+        <div class="tip-box right">
+          <span class="tip-title">Importar rúbrica</span>
+          Permite traer rúbricas en formato CSV exportadas desde Canvas. Ideal para reutilizar rúbricas entre cursos sin crearlas desde cero.
+        </div>
+      </div>
+
+      <div class="tip-wrap">
+        <button class="btn btn-primary">+ Crear nueva rúbrica</button>
+        <div class="tip-box right">
+          <span class="tip-title">Crear nueva rúbrica</span>
+          Abre el editor de Rúbricas Mejoradas para definir criterios, niveles de logro y puntos. La rúbrica queda guardada en el curso y puede asignarse a tareas, debates y exámenes.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active">Guardado</button>
+    <button class="tab">Archivado</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <colgroup>
+        <col class="col-check">
+        <col class="col-nombre">
+        <col class="col-puntos">
+        <col class="col-crit">
+        <col class="col-ubic">
+        <col class="col-acc">
+      </colgroup>
+      <thead>
+        <tr>
+          <th><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></th>
+
+          <th>
+            <div class="tip-wrap">
+              Nombre de rúbrica &#8597;
+              <div class="tip-box">
+                <span class="tip-title">Nombre de rúbrica</span>
+                Identificador único. Haciendo clic en el nombre se accede al editor para ver o modificar criterios, niveles y puntos. Se puede ordenar alfabéticamente.
+              </div>
+            </div>
+          </th>
+
+          <th>
+            <div class="tip-wrap">
+              Puntos totales &#8597;
+              <div class="tip-box">
+                <span class="tip-title">Puntos totales</span>
+                Suma de los puntos máximos de todos los criterios. Al asociar la rúbrica a una tarea, este valor puede actuar como puntuación máxima de la entrega o solo como referencia de calificación.
+              </div>
+            </div>
+          </th>
+
+          <th>
+            <div class="tip-wrap">
+              Criterios &#8597;
+              <div class="tip-box">
+                <span class="tip-title">Criterios</span>
+                Número de aspectos evaluados en la rúbrica (filas). A mayor cantidad de criterios, más granular es la retroalimentación al estudiante.
+              </div>
+            </div>
+          </th>
+
+          <th>
+            <div class="tip-wrap">
+              Ubicación utilizada &#8597;
+              <div class="tip-box">
+                <span class="tip-title">Ubicación utilizada</span>
+                Indica si la rúbrica está asignada a actividades del curso.<br><br>
+                <strong>cursos y tareas</strong> → ya vinculada a ≥1 actividad.<br><br>
+                <strong>—</strong> → creada pero sin asignar. Puede editarse o eliminarse libremente.<br><br>
+                Si está en más de una tarea, la edición directa queda bloqueada.
+              </div>
+            </div>
+          </th>
+
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Subred IPv4 Máscara fija</a></td>
+          <td>10</td>
+          <td>3</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td>
+            <div class="tip-wrap" style="justify-content:center;">
+              <button class="actions-btn">&#8942;</button>
+              <div class="tip-box right">
+                <span class="tip-title">Menú de acciones</span>
+                Opciones disponibles para esta rúbrica:<br><br>
+                • <strong>Editar</strong> — si no está en más de una tarea.<br>
+                • <strong>Duplicar</strong> — crea una copia editable.<br>
+                • <strong>Archivar</strong> — pasa a la pestaña Archivado.<br>
+                • <strong>Eliminar</strong> — borra y desvincula evaluaciones (irreversible).
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Examen Práctico P2</a></td>
+          <td>10</td>
+          <td>5</td>
+          <td><span class="dash">—</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Examen Supletorio</a></td>
+          <td>10</td>
+          <td>10</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Examen Simulación 2</a></td>
+          <td>10</td>
+          <td>5</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">VLSM IPv4</a></td>
+          <td>10</td>
+          <td>4</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Identificación de direcciones MAC y IP</a></td>
+          <td>1.5</td>
+          <td>5</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Consulta Capa 2</a></td>
+          <td>10</td>
+          <td>3</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">Tarea Rutas estáticas de siguiente salto</a></td>
+          <td>10</td>
+          <td>7</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" style="width:13px;height:13px;cursor:pointer;"></td>
+          <td><a class="link" href="#">VLSM FINAL</a></td>
+          <td>10</td>
+          <td>4</td>
+          <td><span class="tag">cursos y tareas</span></td>
+          <td><button class="actions-btn">&#8942;</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bottom-row">
+    <button class="btn">Cancelar</button>
+    <div class="tip-wrap">
+      <button class="btn btn-download">&#8659; Descargar rúbricas seleccionadas</button>
+      <div class="tip-box right">
+        <span class="tip-title">Descargar rúbricas seleccionadas</span>
+        Exporta en CSV las evaluaciones de las rúbricas marcadas. Incluye estudiante, criterio, nivel asignado y puntuación. Disponible en Rúbricas Mejoradas (Enhanced Rubrics).
+      </div>
+    </div>
+  </div>
+
+  <!-- Info strip -->
+  <div class="info-strip">
+    <div class="info-pill">
+      <span class="dot" style="background:#0770c5;"></span>
+      <span class="pill-text">
+        <span class="pill-label">Pestaña Guardado</span>
+        Lista todas las rúbricas activas del curso, asignadas o no a actividades.
+      </span>
+    </div>
+    <div class="info-pill">
+      <span class="dot" style="background:#888780;"></span>
+      <span class="pill-text">
+        <span class="pill-label">Pestaña Archivado</span>
+        Rúbricas desactivadas. Conservan su historial y pueden restaurarse.
+      </span>
+    </div>
+    <div class="info-pill">
+      <span class="dot" style="background:#e07a50;"></span>
+      <span class="pill-text">
+        <span class="pill-label">Guión ( — ) en Ubicación</span>
+        Rúbrica sin asignar: editable y eliminable sin restricciones.
+      </span>
+    </div>
+    <div class="info-pill">
+      <span class="dot" style="background:#3b6d11;"></span>
+      <span class="pill-text">
+        <span class="pill-label">Pasa el cursor sobre los encabezados</span>
+        Cada columna y botón tiene un tooltip explicativo interactivo.
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<p class="footer">DEO · UISEK — Canvas LMS · Rúbricas Mejoradas · Guía visual interactiva</p>
+
+</body>
+</html>
